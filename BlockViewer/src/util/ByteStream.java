@@ -23,24 +23,11 @@ public class ByteStream {
         return tap()
                 .collect(
                     ByteArrayOutputStream::new,
-                    ByteArrayOutputStream::write, (bos1, bos2) -> {
-                        try {
-                            bos2.writeTo(bos1);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
+                    ByteArrayOutputStream::write,
+                    ByteStream::mergeByteStreams
                 )
                 .toByteArray();
 
-    }
-
-    private static ByteArrayOutputStream mergeByteStreams(ByteArrayOutputStream bos1, ByteArrayOutputStream bos2) {
-        try {
-            bos2.writeTo(bos1);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public Stream<Byte> tap() {
@@ -52,5 +39,13 @@ public class ByteStream {
                 throw new UncheckedIOException(e);
             }
         }).takeWhile(Optional::isPresent).map(Optional::get);
+    }
+
+    private static void mergeByteStreams(ByteArrayOutputStream bos1, ByteArrayOutputStream bos2) {
+        try {
+            bos2.writeTo(bos1);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
