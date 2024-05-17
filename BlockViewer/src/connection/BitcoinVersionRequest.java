@@ -1,28 +1,26 @@
 package connection;
 
-import util.BytesConverter;
+import responses.VersionNode;
+import responses.VersionPayload;
+import responses.VersionResponse;
+import util.ByteStream;
 
 import java.io.*;
 import java.net.Socket;
 
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class BitcoinVersionRequest {
-    public void connect(int[] ip) {
+    public void connect(String ip) {
         int nodePort = 8333;  // Default Bitcoin network port
-        String address = Arrays.stream(ip)
-                .mapToObj(String::valueOf)
-                .collect(Collectors.joining("."));
 
-        try (Socket socket = new Socket(address, nodePort)) {
+        try (Socket socket = new Socket(ip, nodePort)) {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
 
             byte[] versionPayload = constructVersionPayload(ip);
@@ -72,177 +70,42 @@ public class BitcoinVersionRequest {
         }
     }
 
-    private byte[] constructVersionPayload(int[] addr) {
-        // Version message fields
-        int version = 60002;
-        long services = 1;
-        long timestamp = System.currentTimeMillis() / 1000;
-
+    private byte[] constructVersionPayload(String addr) throws UnknownHostException{
         short port = 8333;
-        long nonce = 69;
-        byte[] user_agent = "/Satoshi:0.7.2/".getBytes(StandardCharsets.UTF_8);
-        int start_height = 0;
-        boolean relay = true;
+        long services = 1;
 
-        // Create a byte buffer to store the payload
-        ByteBuffer buffer = ByteBuffer
-                .allocate(1024)
-                .order(ByteOrder.LITTLE_ENDIAN);
+        var payload = VersionPayload.builder()
+                .setVersion(60002)
+                .setServices(services)
+                .setTimestamp(System.currentTimeMillis() / 1000)
+                .setReceiver(VersionNode.from(services, addr, port))
+                .setSender(VersionNode.from(services, "89.100.241.33", port))
+                .setNonce(69)
+                .setUserAgent("/Satoshi:0.7.2/")
+                .setStartHeight(0)
+                .setRelay(true)
+                .build();
 
-//        System.out.println(user_agent.length);
-        // Write the fields to the buffer
-        buffer
-            .putInt(version)        // 4
-            .putLong(services)      // 8
-            .putLong(timestamp)     // 8
-            .put(this.getNetworkAddr(services, addr, port))                             // 26 -> 46
-            .put(this.getNetworkAddr(services, new int[] {89,100,241,33}, port))         // 26
-            .putLong(nonce)         // 8
-            .put((byte) user_agent.length) //  1
-            .put(user_agent)        // 15
-            .putInt(start_height)   // 4        -> 54
-            .put((byte) (relay ? 1 : 0))// 1  -> 1
-            .flip();
-
-        // Get the payload bytes
-        byte[] payload = new byte[buffer.limit()];
-        buffer.get(payload);
-        System.out.println(payload.length);
-        return payload;
+        byte[] in = payload.toBuffer().array();
+        System.out.println(in.length);
+        return in;
     }
 
-    private String asHex(byte[] in){
-        StringBuilder hex = new StringBuilder();
-        for (byte i : in) {
-            hex.append(" ").append(String.format("%02X", i));
-        }
-        return hex.toString();
-    }
-
-
-
-    public byte[] getNetworkAddr(long services, int[] ipv4Address, short port) {
-        byte[] ipv6Bytes = new byte[16];
-
-        for (int i = 0; i < 10; i++) {
-            ipv6Bytes[i] = 0;
-        }
-
-        ipv6Bytes[10] = (byte) 0xFF;
-        ipv6Bytes[11] = (byte) 0xFF;
-
-        for (int i = 0; i < 4; i++) {
-            ipv6Bytes[12 + i] = (byte) ipv4Address[i];
-        }
-
-        return ByteBuffer.allocate(Long.BYTES + ipv6Bytes.length + Short.BYTES)
-                .order(ByteOrder.LITTLE_ENDIAN)
-                .putLong(services)
-                .put(ipv6Bytes)
-                .putShort(port)
-                .array();
-    }
 
     private void readInput(DataInputStream inputStream) {
         try {
-            // Read the magic value
-            Stream<Byte> byteStream = Stream.generate(() -> {
-                try {
-                    int nextByte = inputStream.read();
-                    return nextByte != -1 ? Optional.of((byte) nextByte) : Optional.<Byte>empty();
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            })
-                .takeWhile(Optional::isPresent)
-                .map(Optional::get);
-
-            int magic = asLittleEndianInt(byteStream.limit(4).());
-            System.out.println("Magic: " + Integer.toHexString(magic));
-
-//            // Read the command
-//            byte[] commandBytes = new byte[12];
-//            inputStream.readFully(commandBytes);
-//            String command = new String(commandBytes, StandardCharsets.US_ASCII).trim();
-//            System.out.println("Command: " + command);
-//
-//            // Read the payload length
-//            // int length = inputStream.readInt();
-//            byte[] bLength = new byte[4];
-//            inputStream.readFully(bLength);
-//            int length = BytesConverter.of(bLength).num();
-////            int length = readLittleEndianInt(inputStream);
-//
-//            System.out.println("Length: " + length);
-//
-//            // Read the checksum
-//            byte[] checksum = new byte[4];
-//            inputStream.readFully(checksum);
-//            System.out.println("Checksum: " + BytesConverter.of(checksum).hex());
-//
-//            // Read the payload
-//            byte[] payload = new byte[length];
-//            inputStream.readFully(payload);
-//            System.out.println("Payload: " + BytesConverter.of(payload).hex());
-//            if(payload.length > 0) {
-//                unpackPayload(payload);
-//            }
-
-
-        } catch (EOFException e) {
-            System.out.println("===== END OF PAYLOAD =====");
-        } catch (IOException e) {
+            var bytes = ByteStream.of(inputStream);
+            VersionResponse response = VersionResponse.from(bytes);
+            System.out.format(
+                    "Magic: %s\nCmd: %s\nChecksum: %s\nPayload size: %s",
+                    response.magic(),
+                    response.command(),
+                    response.checksum(),
+                    response.length()
+            );
+        }catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public int asLittleEndianInt(byte[] in) throws IOException {
-        return ByteBuffer.wrap(in).order(ByteOrder.LITTLE_ENDIAN).getInt();
-    }
-//    public int readLittleEndianInt(DataInputStream inputStream) throws IOException {
-//        byte[] bytes = new byte[4];
-//        inputStream.readFully(bytes);
-//        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
-//    }
-
-    public void unpackPayload(byte[] payload) {
-        ByteBuffer buffer = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN);
-
-        int version = buffer.getInt();
-        System.out.println("Version: " + version);
-
-        long services = buffer.getLong();
-        System.out.println("Services: " + services);
-
-        long timestamp = buffer.getLong();
-        System.out.println("Timestamp: " + timestamp);
-
-        // Unpack network address of the node receiving this message
-        long servicesNode = buffer.getLong();
-        byte[] ipAddrNode = new byte[16];
-        buffer.get(ipAddrNode);
-        int portNode = buffer.getShort() & 0xffff;
-        System.out.println("Receiving Node: Services=" + servicesNode + ", IP=" + Arrays.toString(ipAddrNode) + ", Port=" + portNode);
-
-        // Unpack network address of the node emitting this message
-        long servicesPeer = buffer.getLong();
-        byte[] ipAddrPeer = new byte[16];
-        buffer.get(ipAddrPeer);
-        int portPeer = buffer.getShort() & 0xffff;
-        System.out.println("Emitting Node: Services=" + servicesPeer + ", IP=" + Arrays.toString(ipAddrPeer) + ", Port=" + portPeer);
-
-        long nonce = buffer.getLong();
-        System.out.println("Nonce: " + nonce);
-
-        byte[] userAgentBytes = new byte[buffer.get()];
-        buffer.get(userAgentBytes);
-        String userAgent = new String(userAgentBytes, StandardCharsets.UTF_8);
-        System.out.println("User Agent: " + userAgent);
-
-        int startHeight = buffer.getInt();
-        System.out.println("Start Height: " + startHeight);
-
-        boolean relay = buffer.get() != 0;
-        System.out.println("Relay: " + relay);
-    }
 }
