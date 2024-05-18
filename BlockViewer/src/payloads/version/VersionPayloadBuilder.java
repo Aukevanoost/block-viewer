@@ -70,7 +70,7 @@ public class VersionPayloadBuilder implements IPayloadBuilder {
         sender = NodeFragment.from(feed);
         nonce = feed.pullLong();
 
-        int userAgentSize = feed.pullInt8();
+        int userAgentSize = feed.pullVarInt();
         userAgent = feed.pullString(userAgentSize);
 
         startHeight = feed.pullInt32();

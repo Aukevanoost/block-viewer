@@ -6,7 +6,6 @@ import util.Convert;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.List;
 
 public record TransactionInFragment(byte[] prev_output, byte[] script, int sequence) implements IPayload {
 
@@ -23,13 +22,13 @@ public record TransactionInFragment(byte[] prev_output, byte[] script, int seque
         return ByteBuffer.allocate(bufferSize())
             .order(ByteOrder.LITTLE_ENDIAN)
             .put(prev_output)
-            .put(Convert.intToVarInt(script.length))
+            .put(Convert.toVarInt(script.length))
             .put(script)
             .putInt(sequence)
             .flip();
     }
 
     public int bufferSize() {
-        return 36 + Convert.intToVarInt(script.length).length + script.length + 4;
+        return 36 + Convert.toVarInt(script.length).length + script.length + 4;
     }
 }

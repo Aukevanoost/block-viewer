@@ -2,31 +2,44 @@ import connection.workers.ConnectionCourier;
 import connection.MessageTracker;
 import message.BTCMessage;
 import payloads.block.BlockPayload;
+import payloads.fragments.BlockHeaderFragment;
 import payloads.fragments.NodeFragment;
 import payloads.getdata.GetDataPayload;
 import payloads.inv.InvPayload;
 import payloads.fragments.InventoryVectorFragment;
 import payloads.version.VersionPayload;
+import printer.BlockPrinter;
 import util.ByteBufferFeed;
+import util.Convert;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.*;
 
 public class Main {
     public static void main(String... args) {
-    //    int[] ip = {51,195,28,51}; // 185.197.160.61
-        String ip = "185.197.160.61";
-        //String ip = "51.195.28.51";
+        // String ip = "185.197.160.61";
+        // String ip = "51.195.28.51";
+
+        // Trying not to annoy a single server
+        String ip = getRandomIPAddress();
+
+
         short port = 8333;
         long services = 1;
 
         ExecutorService postService = Executors.newFixedThreadPool(2);
 
         try (Socket socket = new Socket(ip, port)) {
-            System.out.format("Connection established: %s\n",new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date()));
+            System.out.format("=====| Connection established with Node %s at %s |=====\n", ip, new SimpleDateFormat("yyyy.MM.dd 'at' HH:mm:ss").format(new java.util.Date()));
             var tracker = new MessageTracker(socket.getInputStream(), postService);
             var courier = new ConnectionCourier(new DataOutputStream(socket.getOutputStream()));
             postService.submit(courier);
@@ -37,44 +50,21 @@ public class Main {
                  */
                 var trackedVersionMsg= tracker.track("version");
 
-                /// ### TEST ###
-
-
-
-                // System.out.println(Arrays.toString(test));
-                var versionMsgOut = BTCMessage.from(
+                courier.mailbox.put(
+                    BTCMessage.from(
                         "version",
                         VersionPayload.builder()
-                                .setVersion(70015)
-                                .setServices(services)
-                                .setTimestamp(System.currentTimeMillis() / 1000)
-                                .setReceiver(NodeFragment.from(services, ip, port))
-                                .setSender(NodeFragment.from(services, "89.100.241.33", port))
-                                .setNonce(69)
-                                .setUserAgent("/Satoshi:0.15.2/")
-                                .setStartHeight(0)
-                                .setRelay(true)
-                                .build().toBuffer().array()
-                );
-//                var payloadFeedOut = ByteBufferFeed.from(ByteBuffer.wrap(versionMsgOut.payload()).order(ByteOrder.LITTLE_ENDIAN));
-//                VersionPayload versionPLOut = VersionPayload.builder().from(payloadFeedOut);
-//                System.out.println(versionPLOut.toString());
-
-                courier.mailbox.put(
-                        BTCMessage.from(
-                            "version",
-                            VersionPayload.builder()
-                                .setVersion(60002)
-                                .setServices(services)
-                                .setTimestamp(System.currentTimeMillis() / 1000)
-                                .setReceiver(NodeFragment.from(services, ip, port))
-                                .setSender(NodeFragment.from(services, "89.100.241.33", port))
-                                .setNonce(69)
-                                .setUserAgent("/Satoshi:0.7.2/")
-                                .setStartHeight(0)
-                                .setRelay(true)
-                                .build().toBuffer().array()
-                        )
+                            .setVersion(70015)
+                            .setServices(services)
+                            .setTimestamp(System.currentTimeMillis() / 1000)
+                            .setReceiver(NodeFragment.from(services, ip, port))
+                            .setSender(NodeFragment.from(services, "89.100.241.33", port))
+                            .setNonce(69)
+                            .setUserAgent("/Satoshi:0.15.2/")
+                            .setStartHeight(0)
+                            .setRelay(true)
+                            .build().toBuffer().array()
+                    )
                 );
 
                 /*
@@ -82,10 +72,6 @@ public class Main {
                  */
                 BTCMessage versionMsg = tracker.await(trackedVersionMsg, 10, TimeUnit.SECONDS);
                 BTCMessage headerMsg = tracker.await(trackedVersionMsg, 10, TimeUnit.SECONDS);
-//                var payloadFeed = ByteBufferFeed.from(ByteBuffer.wrap(versionMsg.payload()).order(ByteOrder.LITTLE_ENDIAN));
-//                VersionPayload versionPL = VersionPayload.builder().from(payloadFeed);
-//                System.out.println(versionPL.toString());
-
                 var trackedPingMsg = tracker.track("ping");
 
                 courier.mailbox.put( BTCMessage.empty("verack") );
@@ -113,7 +99,6 @@ public class Main {
                     for (InventoryVectorFragment v : invMessagePL.inventory()) {
                         if(v.invType() == InventoryVectorFragment.InventoryType.MSG_BLOCK) {
                             foundBlock = true;
-                            System.out.println("FOUND A BLOCK!!!");
                             blockInvVector = v;
                             break;
                         }
@@ -134,11 +119,15 @@ public class Main {
                     )
                 );
                 BTCMessage blockMsg = tracker.await(trackedBlockMsg, 1, TimeUnit.MINUTES);
-                var dataPayload = BlockPayload.from(
+                var blockPayload = BlockPayload.from(
                     ByteBufferFeed.from(blockMsg.payload()) // Check if block msg
                 );
 
-                System.out.format("Received block! (%d bytes)\n", dataPayload.bufferSize());
+                (new BlockPrinter(blockPayload)).print();
+
+                var hashedBlock = getHash(blockPayload.header());
+                System.out.format( "B:%s\n",  Convert.toHexString(hashedBlock));
+                System.out.format( "I:%s\n",  Convert.toHexString(blockInvVector.hash()));
 
                 System.out.println("=== leaving now bye ===");
 
@@ -156,5 +145,29 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static byte[] getHash(BlockHeaderFragment blockHeader) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(blockHeader.toBuffer().array());
+            return digest.digest(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String getRandomIPAddress() {
+        List<String> ipAddresses = List.of("34.92.95.72",
+                "140.238.220.99",   "182.69.118.149",   "38.242.206.56",
+                "47.202.79.149",    "3.238.8.21",       "3.71.96.148",
+                "15.237.37.136",    "3.248.223.135",    "37.60.247.190",
+                "34.93.21.82",      "5.9.87.228",       "5.225.145.111",
+                "57.135.69.226",    "5.164.29.36",      "18.197.172.46"
+        );
+
+        return ipAddresses.get(
+            (new Random()).nextInt(ipAddresses.size())
+        );
     }
 }

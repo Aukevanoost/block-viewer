@@ -30,7 +30,7 @@ public class ConnectionCourier implements ConnectionWorker, Runnable {
                 ArrayList<BTCMessage> mainBag = new ArrayList<>();
                 mailbox.drainTo(mainBag);
                 for (BTCMessage msg : mainBag) {
-                    monitor.log("> REC", msg.command(), msg.length());
+                    monitor.log("< SEN", msg.command(), msg.length());
                     outputStream.write(msg.feed().toArray());
                 }
                 outputStream.flush();

@@ -20,7 +20,7 @@ public class InvPayloadBuilder implements IPayloadBuilder {
     }
 
     public InvPayload from(ByteBufferFeed feed) {
-        int length = feed.pullInt8();
+        int length = feed.pullVarInt();
         var inventory = new ArrayList<InventoryVectorFragment>();
         for(int i = 0; i < length; i++) {
             inventory.add(

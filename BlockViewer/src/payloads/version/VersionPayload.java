@@ -2,6 +2,7 @@ package payloads.version;
 
 import payloads.fragments.NodeFragment;
 import payloads.IPayload;
+import util.Convert;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -30,9 +31,12 @@ public record VersionPayload(int version, long services, long timestamp, NodeFra
             .put((byte) (relay ? 1 : 0))
             .flip();
     }
+
     public int bufferSize() {
-        return 4 + 8 + 8 + 26 + 26 + 8 + 1 + userAgent.getBytes(StandardCharsets.UTF_8).length + 4 + 1;
+        var userAgentSize = userAgent.getBytes(StandardCharsets.UTF_8).length;
+        return 4 + 8 + 8 + 26 + 26 + 8 + Convert.toVarInt(userAgentSize).length + userAgentSize + 4 + 1;
     }
+
     @Override
     public String toString() {
         return

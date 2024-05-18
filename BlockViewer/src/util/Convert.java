@@ -7,7 +7,7 @@ import java.nio.ByteOrder;
 import java.util.List;
 
 public class Convert {
-    public static byte[] intToVarInt(int value) {
+    public static byte[] toVarInt(int value) {
         if (value < 0xFD) {
             return new byte[]{(byte) value};
         } else if (value <= 0xFFFF) {
@@ -34,6 +34,21 @@ public class Convert {
                 Integer::sum
         );
 
-        return Convert.intToVarInt(payloads.size()).length + payloadSize;
+        return Convert.toVarInt(payloads.size()).length + payloadSize;
+    }
+
+    public static byte[] hexToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i+1), 16));
+        }
+        return data;
+    }
+    public static String toHexString(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes)  sb.append(String.format("%02x", b));
+        return sb.toString();
     }
 }

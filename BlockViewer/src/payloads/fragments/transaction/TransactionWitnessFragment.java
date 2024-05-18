@@ -19,12 +19,12 @@ public record TransactionWitnessFragment(byte[] data) implements IPayload {
     public ByteBuffer toBuffer() {
         return ByteBuffer.allocate(bufferSize())
             .order(ByteOrder.LITTLE_ENDIAN)
-            .put(Convert.intToVarInt(data.length))
+            .put(Convert.toVarInt(data.length))
             .put(data)
             .flip();
     }
 
     public int bufferSize() {
-        return Convert.intToVarInt(data.length).length + data.length;
+        return Convert.toVarInt(data.length).length + data.length;
     }
 }

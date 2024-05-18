@@ -19,7 +19,7 @@ public abstract class StreamMonitor {
     public void log(String type, String cmd, int size) {
         System.out.format(
             "[%s] %s: %s (%d bytes)\n",
-            new SimpleDateFormat("HH.mm.ss").format(new java.util.Date()),
+            new SimpleDateFormat("HH:mm:ss").format(new java.util.Date()),
             type,
             cmd,
             size

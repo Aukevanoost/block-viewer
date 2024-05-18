@@ -1,7 +1,7 @@
 package payloads.block;
 
 import payloads.IPayload;
-import payloads.fragments.BlockHeaderPayloadFragment;
+import payloads.fragments.BlockHeaderFragment;
 import payloads.fragments.transaction.TransactionFragment;
 import util.ByteBufferFeed;
 import util.Convert;
@@ -11,9 +11,9 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
-public record BlockPayload(BlockHeaderPayloadFragment header, List<TransactionFragment> transactions) implements IPayload {
+public record BlockPayload(BlockHeaderFragment header, List<TransactionFragment> transactions) implements IPayload {
     public static BlockPayload from(ByteBufferFeed feed) {
-        var header = BlockHeaderPayloadFragment.from(feed);
+        var header = BlockHeaderFragment.from(feed);
 
         int nTransactions = feed.pullVarInt();
         var transactions = new ArrayList<TransactionFragment>();
@@ -28,7 +28,7 @@ public record BlockPayload(BlockHeaderPayloadFragment header, List<TransactionFr
                 .order(ByteOrder.LITTLE_ENDIAN);
 
         if(transactions.size() > 0) {
-            buffer.put(Convert.intToVarInt(transactions.size()));
+            buffer.put(Convert.toVarInt(transactions.size()));
             for (var t : transactions ) buffer.put(t.toBuffer());
         }
         return buffer.flip();

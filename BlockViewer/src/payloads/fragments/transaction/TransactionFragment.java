@@ -52,17 +52,17 @@ public record TransactionFragment(int version, List<TransactionInFragment> txIn,
         }
 
         if(txIn.size() > 0) {
-            buffer.put(Convert.intToVarInt(txIn.size()));
+            buffer.put(Convert.toVarInt(txIn.size()));
             for (var t : txIn ) buffer.put(t.toBuffer());
         }
 
         if(txOut.size() > 0) {
-            buffer.put(Convert.intToVarInt(txOut.size()));
+            buffer.put(Convert.toVarInt(txOut.size()));
             for (var t : txOut ) buffer.put(t.toBuffer());
         }
 
         if(txWitness.size() > 0) {
-            buffer.put(Convert.intToVarInt(txWitness.size()));
+            buffer.put(Convert.toVarInt(txWitness.size()));
             for (var t : txWitness ) buffer.put(t.toBuffer());
         }
 
@@ -94,7 +94,7 @@ public record TransactionFragment(int version, List<TransactionInFragment> txIn,
             Integer::sum
         );
 
-        return Convert.intToVarInt(payloads.size()).length + payloadSize;
+        return Convert.toVarInt(payloads.size()).length + payloadSize;
     }
 
 }

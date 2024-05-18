@@ -2,6 +2,7 @@ package payloads.inv;
 
 import payloads.IPayload;
 import payloads.fragments.InventoryVectorFragment;
+import util.Convert;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -14,9 +15,9 @@ public record InvPayload(List<InventoryVectorFragment> inventory) implements IPa
 
     public ByteBuffer toBuffer() {
         ByteBuffer buffer = ByteBuffer
-            .allocate(4 + (inventory.size() * 36))
+            .allocate(bufferSize())
             .order(ByteOrder.LITTLE_ENDIAN)
-            .putInt(inventory.size());
+            .putInt(Convert.toVarInt(inventory.size()).length);
 
         for (InventoryVectorFragment vector : inventory) {
             buffer.putInt(vector.type());
@@ -26,7 +27,7 @@ public record InvPayload(List<InventoryVectorFragment> inventory) implements IPa
         return buffer.flip();
     }
     public int bufferSize() {
-        return 4 + (inventory.size() * 36);
+        return Convert.toVarInt(inventory.size()).length + (inventory.size() * 36);
     }
 
 

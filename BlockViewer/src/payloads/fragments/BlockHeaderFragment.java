@@ -4,27 +4,23 @@ import payloads.IPayload;
 import util.ByteBufferFeed;
 import util.Convert;
 
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-import java.util.List;
 
-public record BlockHeaderPayloadFragment(int version, byte[] prev_block, byte[] merkle_root, int timestamp, int bits, int nonce) implements IPayload {
-    public static BlockHeaderPayloadFragment from(ByteBufferFeed feed) {
-        return new BlockHeaderPayloadFragment(
+public record BlockHeaderFragment(int version, byte[] prev_block, byte[] merkle_root, int timestamp, int difficultyInBits, String nonce) implements IPayload {
+    public static BlockHeaderFragment from(ByteBufferFeed feed) {
+        return new BlockHeaderFragment(
             feed.pullInt32(),
             feed.pullBytes(32),
             feed.pullBytes(32),
             feed.pullInt32(),
             feed.pullInt32(),
-            feed.pullInt32()
+            Convert.toHexString(feed.pullBytes(4))
         );
     }
-    public static BlockHeaderPayloadFragment from(int version, byte[] prev_block, byte[] merkle_root, int timestamp, int bits, int nonce) {
-        return new BlockHeaderPayloadFragment(version,prev_block, merkle_root, timestamp, bits, nonce);
+    public static BlockHeaderFragment from(int version, byte[] prev_block, byte[] merkle_root, int timestamp, int difficultyInBits, String nonce) {
+        return new BlockHeaderFragment(version,prev_block, merkle_root, timestamp, difficultyInBits, nonce);
     }
 
     public ByteBuffer toBuffer() {
@@ -34,8 +30,8 @@ public record BlockHeaderPayloadFragment(int version, byte[] prev_block, byte[] 
             .put(prev_block)
             .put(merkle_root)
             .putInt(timestamp)
-            .putInt(bits)
-            .putInt(nonce)
+            .putInt(difficultyInBits)
+            .put(Convert.hexToByteArray(nonce))
             .flip();
     }
 
@@ -50,7 +46,7 @@ public record BlockHeaderPayloadFragment(int version, byte[] prev_block, byte[] 
             ",\n\t\tprev_block = " + Arrays.toString(prev_block) +
             ",\n\t\tmerkle_root = " + Arrays.toString(merkle_root) +
             ",\n\t\ttimestamp = " + timestamp +
-            ",\n\t\tbits = " + bits +
+            ",\n\t\tbits = " + difficultyInBits +
             ",\n\t\tnonce = " + nonce +
         "\n\t}";
     }

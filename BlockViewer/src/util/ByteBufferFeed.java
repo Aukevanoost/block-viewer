@@ -20,12 +20,6 @@ public record ByteBufferFeed(ByteBuffer buffer) {
     public String pullString(int n) {
         return new String(this.pullBytes(n), StandardCharsets.US_ASCII).trim();
     }
-    private  String pullHexString(int n) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : pullBytes(n))  sb.append(String.format("%02x", b));
-        return sb.toString();
-    }
-
 
     /*
      * Booleans
@@ -49,9 +43,11 @@ public record ByteBufferFeed(ByteBuffer buffer) {
      * *** NUMERIC OUTPUT ***
      */
     public long pullLong() { return buffer.getLong(); }
+
     public short pullShort() { return buffer.getShort(); }
+
     public int pullInt32() { return buffer.getInt(); }
-    public int pullInt8() { return Byte.toUnsignedInt(buffer.get()); }
+
     public int pullVarInt() {
         byte firstByte = buffer.get();
 
@@ -60,7 +56,6 @@ public record ByteBufferFeed(ByteBuffer buffer) {
             case (byte) 0xFE, (byte) 0xFF -> pullInt32();
             default -> Byte.toUnsignedInt(firstByte);
         };
-
     }
 
     public byte[] toArray() {
