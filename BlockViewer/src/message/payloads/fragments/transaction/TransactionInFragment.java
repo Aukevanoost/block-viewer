@@ -1,6 +1,6 @@
-package payloads.fragments.transaction;
+package message.payloads.fragments.transaction;
 
-import payloads.IPayload;
+import message.payloads.IPayload;
 import util.ByteBufferFeed;
 import util.Convert;
 

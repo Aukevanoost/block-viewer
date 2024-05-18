@@ -1,7 +1,7 @@
-package payloads.inv;
+package message.payloads.inv;
 
-import payloads.IPayloadBuilder;
-import payloads.fragments.InventoryVectorFragment;
+import message.payloads.IPayloadBuilder;
+import message.payloads.fragments.InventoryVectorFragment;
 import util.ByteBufferFeed;
 import java.util.ArrayList;
 import java.util.List;

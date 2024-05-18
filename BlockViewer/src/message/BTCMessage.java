@@ -1,14 +1,13 @@
 package message;
 
 import util.ByteBufferFeed;
+import util.ByteHasher;
 import util.ByteStream;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 public record BTCMessage(byte[] magic, String command, int length, byte[] checksum, byte[] payload) {
@@ -34,7 +33,7 @@ public record BTCMessage(byte[] magic, String command, int length, byte[] checks
             new byte[] {(byte) 0xF9, (byte) 0xBE, (byte) 0xB4, (byte) 0xD9},
             command,
             payload.length,
-            checksum(payload),
+            Arrays.copyOf(ByteHasher.from(payload).hash(), 4),
             payload
         );
     }
@@ -55,16 +54,6 @@ public record BTCMessage(byte[] magic, String command, int length, byte[] checks
                 .put(payload)
                 .flip()
         );
-    }
-
-    public static byte[] checksum(byte[] payload) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(digest.digest(payload));
-            return Arrays.copyOf(hash, 4);  // First 4 bytes of the hash
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override

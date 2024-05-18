@@ -1,7 +1,7 @@
-package payloads.version;
+package message.payloads.version;
 
-import payloads.fragments.NodeFragment;
-import payloads.IPayloadBuilder;
+import message.payloads.fragments.NodeFragment;
+import message.payloads.IPayloadBuilder;
 import util.ByteBufferFeed;
 
 public class VersionPayloadBuilder implements IPayloadBuilder {

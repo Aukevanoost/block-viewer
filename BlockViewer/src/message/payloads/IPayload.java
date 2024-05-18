@@ -1,4 +1,4 @@
-package payloads;
+package message.payloads;
 
 import java.nio.ByteBuffer;
 

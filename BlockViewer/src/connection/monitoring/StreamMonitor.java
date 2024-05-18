@@ -5,13 +5,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 public abstract class StreamMonitor {
-    protected final AtomicBoolean fired = new AtomicBoolean(false);
-    public void fire() {
-        fired.set(true);
+    protected final AtomicBoolean cancelled = new AtomicBoolean(false);
+    public void cancel() {
+        cancelled.set(true);
     }
 
     protected boolean taskIsAlive() {
-        return !fired.get()
+        return !cancelled.get()
             && !Thread.currentThread().isInterrupted()
             && Thread.currentThread().isAlive();
     }

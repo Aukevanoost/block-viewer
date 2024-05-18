@@ -5,16 +5,16 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 public class StreamMonitorFinder extends StreamMonitor{
-    public <T> T find(Supplier<Optional<T>> findNeedle) throws TimeoutException{
+    public <T> T find(Supplier<Optional<T>> findNeedle, int timeout) throws TimeoutException{
         try {
             Optional<T> needle;
             while(taskIsAlive()) {
                 needle = findNeedle.get();
                 if(needle.isPresent()) {
-                    this.fired.set(true);
+                    this.cancelled.set(true);
                     return needle.get();
                 }
-                Thread.sleep(10);
+                Thread.sleep(timeout);
             }
         }catch(InterruptedException e) {
             System.out.println("TrackedListener passed away..");

@@ -1,7 +1,7 @@
-package payloads.version;
+package message.payloads.version;
 
-import payloads.fragments.NodeFragment;
-import payloads.IPayload;
+import message.payloads.fragments.NodeFragment;
+import message.payloads.IPayload;
 import util.Convert;
 
 import java.nio.ByteBuffer;

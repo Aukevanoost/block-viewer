@@ -1,12 +1,11 @@
-package payloads.fragments.transaction;
+package message.payloads.fragments.transaction;
 
-import payloads.IPayload;
+import message.payloads.IPayload;
 import util.ByteBufferFeed;
 import util.Convert;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.List;
 
 public record TransactionOutFragment(long value, String script) implements IPayload {
     public static TransactionOutFragment from(ByteBufferFeed feed) {

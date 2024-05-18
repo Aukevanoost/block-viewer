@@ -1,56 +1,50 @@
+import connection.MessageTrackerFactory;
 import connection.workers.ConnectionCourier;
-import connection.MessageTracker;
+import connection.workers.ConnectionListener;
 import message.BTCMessage;
-import payloads.block.BlockPayload;
-import payloads.fragments.BlockHeaderFragment;
-import payloads.fragments.NodeFragment;
-import payloads.getdata.GetDataPayload;
-import payloads.inv.InvPayload;
-import payloads.fragments.InventoryVectorFragment;
-import payloads.version.VersionPayload;
+import message.payloads.block.BlockPayload;
+import message.payloads.fragments.NodeFragment;
+import message.payloads.getdata.GetDataPayload;
+import message.payloads.inv.InvPayload;
+import message.payloads.fragments.InventoryVectorFragment;
+import message.payloads.version.VersionPayload;
 import printer.BlockPrinter;
 import util.ByteBufferFeed;
+import util.ByteHasher;
 import util.Convert;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.*;
 
 public class Main {
     public static void main(String... args) {
-        // String ip = "185.197.160.61";
-        // String ip = "51.195.28.51";
-
         // Trying not to annoy a single server
         String ip = getRandomIPAddress();
-
 
         short port = 8333;
         long services = 1;
 
-        ExecutorService postService = Executors.newFixedThreadPool(2);
-
         try (Socket socket = new Socket(ip, port)) {
-            System.out.format("=====| Connection established with Node %s at %s |=====\n", ip, new SimpleDateFormat("yyyy.MM.dd 'at' HH:mm:ss").format(new java.util.Date()));
-            var tracker = new MessageTracker(socket.getInputStream(), postService);
-            var courier = new ConnectionCourier(new DataOutputStream(socket.getOutputStream()));
-            postService.submit(courier);
+            System.out.format(
+                "=====| Connection established with Node %s at %s |=====\n",
+                ip,
+                new SimpleDateFormat("yyyy.MM.dd 'at' HH:mm:ss").format(new java.util.Date())
+            );
+
+            var tracker = MessageTrackerFactory
+                .from(socket)
+                .build();
 
             try {
                 /*
-                 * VERSION CONNECTION
+                 * === VERSION CONNECTION
                  */
-                var trackedVersionMsg= tracker.track("version");
-
-                courier.mailbox.put(
+                tracker.deliver(
                     BTCMessage.from(
                         "version",
                         VersionPayload.builder()
@@ -67,35 +61,26 @@ public class Main {
                     )
                 );
 
+
                 /*
-                 * VERACK CONNECTION
+                 * === VERRACK
                  */
-                BTCMessage versionMsg = tracker.await(trackedVersionMsg, 10, TimeUnit.SECONDS);
-                BTCMessage headerMsg = tracker.await(trackedVersionMsg, 10, TimeUnit.SECONDS);
-                var trackedPingMsg = tracker.track("ping");
-
-                courier.mailbox.put( BTCMessage.empty("verack") );
+                tracker.await("version",10, TimeUnit.SECONDS);
+                tracker.deliver( BTCMessage.empty("verack") );
 
                 /*
-                 * PONG CHECK
-                 */
-                BTCMessage pingMsg = tracker.await(trackedPingMsg, 1, TimeUnit.MINUTES);
-                courier.mailbox.put(BTCMessage.from("pong", pingMsg.payload()));
-
-                /*
-                 * INVENTORY CHECK
+                 * === WAIT FOR INV MESSAGE WITH BLOCK
                  */
                 var foundBlock = false;
 
                 InventoryVectorFragment blockInvVector = null;
                 while (!foundBlock) {
-                    var trackedInvMessage = tracker.track("inv");
-
-                    BTCMessage invMessage = tracker.await(trackedInvMessage,30, TimeUnit.MINUTES);
+                    BTCMessage invMessage = tracker.await("inv",30, TimeUnit.MINUTES);
 
                     InvPayload invMessagePL = InvPayload.builder().from(
                         ByteBufferFeed.from(invMessage.payload()) // Check if block msg
                     );
+
                     for (InventoryVectorFragment v : invMessagePL.inventory()) {
                         if(v.invType() == InventoryVectorFragment.InventoryType.MSG_BLOCK) {
                             foundBlock = true;
@@ -106,11 +91,9 @@ public class Main {
                 }
 
                 /*
-                 * FETCH BLOCK DATA
+                 * === FETCH BLOCK BASED ON INV VECTOR
                  */
-                var trackedBlockMsg = tracker.track("block");
-
-                courier.mailbox.put(
+                tracker.deliver(
                     BTCMessage.from(
                         "getdata",
                         GetDataPayload.from(blockInvVector)
@@ -118,42 +101,38 @@ public class Main {
                             .array()
                     )
                 );
-                BTCMessage blockMsg = tracker.await(trackedBlockMsg, 1, TimeUnit.MINUTES);
+
+                BTCMessage blockMsg = tracker.await("block",1, TimeUnit.MINUTES);
+
                 var blockPayload = BlockPayload.from(
                     ByteBufferFeed.from(blockMsg.payload()) // Check if block msg
                 );
 
-                (new BlockPrinter(blockPayload)).print();
 
-                var hashedBlock = getHash(blockPayload.header());
-                System.out.format( "B:%s\n",  Convert.toHexString(hashedBlock));
-                System.out.format( "I:%s\n",  Convert.toHexString(blockInvVector.hash()));
+                /*
+                 * === PRINT BLOCK
+                 */
+                BlockPrinter.from(blockPayload).print();
 
-                System.out.println("=== leaving now bye ===");
+                var hashedBlock = ByteHasher
+                    .from(blockPayload.header().toBuffer())
+                    .hash();
 
+                System.out.format( "Block header    : %s\n",  Convert.toHexString(hashedBlock));
+                System.out.format( "Inventory vector: %s\n",  Convert.toHexString(blockInvVector.hash()));
             }
             catch (InterruptedException e) {
                 System.out.println("Interrupted: " + e.getMessage());
             }
             catch (Exception e) {
                 e.printStackTrace();
-                System.out.println("Exiting postService.");
             }
 
-            courier.fire();
-            postService.shutdown();
+            System.out.println("Exiting postService.");
+
+            tracker.shutdown();
         } catch (IOException e) {
             e.printStackTrace();
-        }
-    }
-
-    public static byte[] getHash(BlockHeaderFragment blockHeader) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(blockHeader.toBuffer().array());
-            return digest.digest(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
         }
     }
 

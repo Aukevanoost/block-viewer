@@ -1,6 +1,6 @@
-package payloads.ping;
+package message.payloads.ping;
 
-import payloads.IPayloadBuilder;
+import message.payloads.IPayloadBuilder;
 import util.ByteBufferFeed;
 
 public class PingPayloadBuilder implements IPayloadBuilder {

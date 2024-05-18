@@ -1,6 +1,6 @@
-package payloads.fragments;
+package message.payloads.fragments;
 
-import payloads.IPayload;
+import message.payloads.IPayload;
 import util.ByteBufferFeed;
 
 import java.net.Inet6Address;

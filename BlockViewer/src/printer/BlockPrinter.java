@@ -1,7 +1,7 @@
 package printer;
 
-import payloads.block.BlockPayload;
-import payloads.fragments.transaction.TransactionOutFragment;
+import message.payloads.block.BlockPayload;
+import message.payloads.fragments.transaction.TransactionOutFragment;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -10,8 +10,12 @@ import java.time.format.DateTimeFormatter;
 
 public class BlockPrinter {
     private final BlockPayload payload;
-    public BlockPrinter(BlockPayload payload) {
+    private BlockPrinter(BlockPayload payload) {
         this.payload = payload;
+    }
+
+    public static BlockPrinter from(BlockPayload payload) {
+        return new BlockPrinter(payload);
     }
 
     public void print() {
@@ -28,7 +32,7 @@ public class BlockPrinter {
         for(var tx : payload.transactions()) {
             long txValue = tx.txOut().stream().mapToLong(TransactionOutFragment::value).sum() ;
             System.out.format(
-                    "| -- TX\t (%f btc)\t-\t(Tx in: %s)\t-\t(Tx out: %s)\t-\t(Tx witnesses: %s)\n",
+                    "| -- fragment: \t %11.6f btc \t-\t %3d tx IN  \t-\t %3d tx OUT \t-\t %2d Witnesses\n",
                     txValue / 100000000.0,
                     tx.txIn().size(),
                     tx.txOut().size(),

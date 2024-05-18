@@ -1,13 +1,12 @@
-package payloads.fragments.transaction;
+package message.payloads.fragments.transaction;
 
-import payloads.IPayload;
+import message.payloads.IPayload;
 import util.ByteBufferFeed;
 import util.Convert;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public record TransactionFragment(int version, List<TransactionInFragment> txIn, List<TransactionOutFragment> txOut, List<TransactionWitnessFragment> txWitness, int lock_time) implements IPayload {

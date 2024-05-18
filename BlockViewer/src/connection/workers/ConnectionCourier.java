@@ -11,17 +11,18 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class ConnectionCourier implements ConnectionWorker, Runnable {
     private final StreamMonitorExecutor monitor = new StreamMonitorExecutor();
     private final DataOutputStream outputStream;
-    public final LinkedBlockingQueue<BTCMessage> mailbox = new LinkedBlockingQueue<>();
+    public final LinkedBlockingQueue<BTCMessage> mailbox = new LinkedBlockingQueue<>();;
+
     public ConnectionCourier(DataOutputStream outputStream) {
         this.outputStream = outputStream;
     }
 
     public void fire() {
-        monitor.fire();
+        monitor.cancel();
     }
     @Override
     public void run()  {
-        this.monitor.execute(this::emptyMailbox);
+        this.monitor.execute(this::emptyMailbox, 52);
     }
 
     private Boolean emptyMailbox() {

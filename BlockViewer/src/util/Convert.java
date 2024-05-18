@@ -1,6 +1,6 @@
 package util;
 
-import payloads.IPayload;
+import message.payloads.IPayload;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

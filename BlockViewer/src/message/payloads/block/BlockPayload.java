@@ -1,8 +1,8 @@
-package payloads.block;
+package message.payloads.block;
 
-import payloads.IPayload;
-import payloads.fragments.BlockHeaderFragment;
-import payloads.fragments.transaction.TransactionFragment;
+import message.payloads.IPayload;
+import message.payloads.fragments.BlockHeaderFragment;
+import message.payloads.fragments.transaction.TransactionFragment;
 import util.ByteBufferFeed;
 import util.Convert;
 

@@ -1,7 +1,7 @@
-package payloads.getdata;
+package message.payloads.getdata;
 
-import payloads.IPayload;
-import payloads.fragments.InventoryVectorFragment;
+import message.payloads.IPayload;
+import message.payloads.fragments.InventoryVectorFragment;
 import util.ByteBufferFeed;
 
 import java.nio.ByteBuffer;
