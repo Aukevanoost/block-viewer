@@ -8,6 +8,7 @@ public record ByteBufferFeed(ByteBuffer buffer) {
     public static ByteBufferFeed from(byte[] pool) { return new ByteBufferFeed(ByteBuffer.wrap(pool).order(ByteOrder.LITTLE_ENDIAN)); }
     public static ByteBufferFeed from(ByteBuffer feed) { return new ByteBufferFeed(feed); }
 
+
     public byte pullByte() { return buffer.get(); }
 
 
@@ -16,6 +17,10 @@ public record ByteBufferFeed(ByteBuffer buffer) {
         buffer.get(bytes);
         return bytes;
     }
+
+    /*
+     * === String
+     */
 
     public String pullString(int n) {
         return new String(this.pullBytes(n), StandardCharsets.US_ASCII).trim();
@@ -57,6 +62,7 @@ public record ByteBufferFeed(ByteBuffer buffer) {
             default -> Byte.toUnsignedInt(firstByte);
         };
     }
+
 
     public byte[] toArray() {
         return buffer.array();

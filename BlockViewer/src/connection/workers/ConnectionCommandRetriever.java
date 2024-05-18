@@ -2,9 +2,7 @@ package connection.workers;
 
 import connection.monitoring.StreamMonitorFinder;
 import message.BTCMessage;
-import util.ByteStream;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;

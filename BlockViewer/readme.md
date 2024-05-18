@@ -1,7 +1,7 @@
 # Bitcoin BlockViewer
 Assignment 3 - Written in Java17, no external dependencies. 
 
-To run the code you need and Java IDE like Intellij and JavaSE 17 installed. 
+To run the code you need and Java IDE like Intellij and JavaSE 17 installed. It's a simple console application so it should run out of the box. 
 
 ## 1. Architecture
 
@@ -52,4 +52,16 @@ The MessageTracker is a Facade over the 'postService staff' (listener and courie
 ```
 
 ## 3. Payloads
-For every payload used, there is a payload object. Every payload has its own conversion method to a bytearray/buffer. Since there is no native ByteStream like IntStream it's a bit of type freestyling but it works. 
+For every payload used, there is a payload object. Every payload has its own conversion method to a bytearray/buffer. Since there is no native ByteStream like IntStream it's a bit of type freestyling but it works. The bufferSize is for allocation of the object to keep the memory footprint as small as possible. Complex payloads have their own builder but because of the high boilerplate level of Java some payloads have their builder baked in (from method)
+```
+public interface IPayload {
+    ByteBuffer toBuffer();
+    int bufferSize();
+}
+```
+
+## 4. Util
+I know that a Stream is supposed to be Immutable, but the ByteStream and ByteBufferFeed serve as Mutable streams that abstract away the real input stream and allow for a granular way of mapping byte arrays to objects and back. 
+
+- The `ByteStream` is used in the `connection.workers.ConnectionListener` to map the `InputStream` to a `BTCMessage`. 
+- The `ByteBufferFeed` is used by the payloads to extend the `ByteBuffer` behavior to strings and byte arrays.

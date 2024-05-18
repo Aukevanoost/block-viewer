@@ -13,8 +13,6 @@ import java.util.stream.Stream;
 public class ByteStream {
     private InputStream _stream;
 
-
-
     private ByteStream(InputStream stream) {
         this._stream = stream;
     }
@@ -33,19 +31,19 @@ public class ByteStream {
         return buffer.flip();
     }
 
-
     public Stream<Byte> tap() {
         return Stream.generate(() -> {
             try {
                 int nextByte = this._stream.read();
                 return nextByte != -1 ? Optional.of((byte) nextByte) : Optional.<Byte>empty();
             } catch (IOException e) {
-                System.out.println("SOMETHING WENT WRONG");
+                System.out.println("InputStream ");
                 e.printStackTrace();
                 throw new UncheckedIOException(e);
             }
         }).takeWhile(Optional::isPresent).map(Optional::get);
     }
+
     public Stream<Byte> tap(int n) {
         return tap().limit(n);
     }
