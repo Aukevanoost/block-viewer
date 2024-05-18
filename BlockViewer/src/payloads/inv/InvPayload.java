@@ -26,4 +26,6 @@ public record InvPayload(List<InventoryVector> inventory) implements IPayload {
 
         return buffer.flip();
     }
+
+
 }

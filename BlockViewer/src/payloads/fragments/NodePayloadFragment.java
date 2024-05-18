@@ -1,4 +1,4 @@
-package payloads.fragments.node;
+package payloads.fragments;
 
 import payloads.IPayload;
 import util.ByteBufferFeed;
@@ -43,5 +43,13 @@ public record NodePayloadFragment(long services, byte[] ipv6Bytes, short port) i
             .put(ipv6Bytes)
             .putShort(port)
             .flip();
+    }
+
+    public String toString() {
+        return " VersionPayload {" +
+                "\n\t\t\tversion = " + services +
+                ",\n\t\t\ttimestamp = " + Arrays.toString(ipv6Bytes) +
+                ",\n\t\t\treceiver = " + port +
+                "\n\t\t}";
     }
 }

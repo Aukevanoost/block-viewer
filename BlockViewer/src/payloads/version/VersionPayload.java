@@ -1,6 +1,6 @@
 package payloads.version;
 
-import payloads.fragments.node.NodePayloadFragment;
+import payloads.fragments.NodePayloadFragment;
 import payloads.IPayload;
 
 import java.nio.ByteBuffer;
@@ -31,5 +31,20 @@ public record VersionPayload(int version, long services, long timestamp, NodePay
             .flip();
     }
 
+    @Override
+    public String toString() {
+        return
+            "\tVersionPayload {" +
+                "\n\t\tversion = " + version +
+                ",\n\t\tservices = " + services +
+                ",\n\t\ttimestamp = " + timestamp +
+                ",\n\t\treceiver = " + receiver +
+                ",\n\t\tsender = " + sender +
+                ",\n\t\tnonce = " + nonce +
+                ",\n\t\tuserAgent = '" + userAgent + "'" +
+                ",\n\t\tstartHeight = " + startHeight +
+                ",\n\t\trelay = " + relay +
+            "\n\t\n}";
+    }
 
 }

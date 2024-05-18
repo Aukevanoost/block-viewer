@@ -1,5 +1,6 @@
 package connection;
 
+import connection.monitoring.StreamMonitorExecutor;
 import message.BTCMessage;
 
 import java.io.DataOutputStream;
@@ -7,36 +8,40 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class ConnectionCourier implements Runnable {
+public class ConnectionCourier implements ConnectionWorker, Runnable {
+    private final StreamMonitorExecutor monitor = new StreamMonitorExecutor();
     private final DataOutputStream outputStream;
     public final LinkedBlockingQueue<BTCMessage> mailbox = new LinkedBlockingQueue<>();
-    private volatile boolean fired = false;
     public ConnectionCourier(DataOutputStream outputStream) {
         this.outputStream = outputStream;
     }
 
     public void fire() {
-        fired = true;
+        monitor.fire();
     }
     @Override
     public void run()  {
+        this.monitor.execute(this::emptyMailbox);
+    }
+
+    private Boolean emptyMailbox() {
         try {
-            while(!fired && !Thread.currentThread().isInterrupted() && Thread.currentThread().isAlive()) {
-                if(!mailbox.isEmpty()) {
-                    ArrayList<BTCMessage> mailbuffer = new ArrayList<>();
-                    mailbox.drainTo(mailbuffer);
-                    for(BTCMessage msg : mailbuffer) {
-                        System.out.format("< SEN: %s (%d bytes)\n", msg.command(), msg.length());
-                        outputStream.write(msg.feed().toArray());
-                    }
-                    outputStream.flush();
+            if(!mailbox.isEmpty()) {
+                ArrayList<BTCMessage> mainBag = new ArrayList<>();
+                mailbox.drainTo(mainBag);
+                for (BTCMessage msg : mainBag) {
+                    System.out.format("< SEN: %s (%d bytes)\n", msg.command(), msg.length());
+                    outputStream.write(msg.feed().toArray());
                 }
+                outputStream.flush();
             }
-        }catch(IOException e) {
+        } catch(IOException e) {
             System.out.println("Mailman unfortunately passed away...");
-            this.fired = true;
             Thread.currentThread().interrupt();
+            return true;
         }
+
+        return false;
     }
 
 }

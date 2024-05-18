@@ -3,6 +3,7 @@ package connection;
 import message.BTCMessage;
 
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.concurrent.*;
 
 public record MessageTracker(InputStream feed, ExecutorService executor) {

@@ -1,6 +1,6 @@
 package payloads.version;
 
-import payloads.fragments.node.NodePayloadFragment;
+import payloads.fragments.NodePayloadFragment;
 import payloads.IPayloadBuilder;
 import util.ByteBufferFeed;
 
@@ -60,11 +60,12 @@ public class VersionPayloadBuilder implements IPayloadBuilder {
         return this;
     }
 
-    public VersionPayload from(ByteBufferFeed feed) {
 
+        public VersionPayload from(ByteBufferFeed feed) {
         version = feed.pullInt32();
         services = feed.pullLong();
         timestamp = feed.pullLong();
+
         receiver = NodePayloadFragment.from(feed);
         sender = NodePayloadFragment.from(feed);
         nonce = feed.pullLong();

@@ -1,10 +1,11 @@
 package util;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
 public record ByteBufferFeed(ByteBuffer buffer) {
-    public static ByteBufferFeed from(byte[] pool) { return new ByteBufferFeed(ByteBuffer.wrap(pool)); }
+    public static ByteBufferFeed from(byte[] pool) { return new ByteBufferFeed(ByteBuffer.wrap(pool).order(ByteOrder.LITTLE_ENDIAN)); }
     public static ByteBufferFeed from(ByteBuffer feed) { return new ByteBufferFeed(feed); }
 
     public byte pullByte() { return buffer.get(); }

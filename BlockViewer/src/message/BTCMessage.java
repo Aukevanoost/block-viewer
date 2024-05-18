@@ -66,4 +66,15 @@ public record BTCMessage(byte[] magic, String command, int length, byte[] checks
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public String toString() {
+        return "BTCMessage {" +
+            "\n\tmagic = " + Arrays.toString(magic) +
+            ",\n\tcommand = '" + command + '\'' +
+            ",\n\tlength = " + length +
+            ",\n\tchecksum = " + Arrays.toString(checksum) +
+            ",\n\tpayload = " + Arrays.toString(payload) +
+            "\n}";
+    }
 }
