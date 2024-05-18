@@ -1,4 +1,4 @@
-package connection;
+package connection.workers;
 
 import connection.monitoring.StreamMonitorExecutor;
 import message.BTCMessage;
@@ -29,9 +29,10 @@ public class ConnectionListener implements ConnectionWorker, Runnable {
     private Boolean processIncomingMessages() {
         try {
             while(feed.bytesLeft() > 0) {
-                var res = BTCMessage.from(feed);
-                System.out.println("> received: " + res.command());
-                _messages.put(res);
+                var msg = BTCMessage.from(feed);
+                monitor.log("> REC", msg.command(), msg.length());
+
+                _messages.put(msg);
             }
         }catch(IOException|InterruptedException e) {
             System.out.println("Listener unfortunately passed away...");

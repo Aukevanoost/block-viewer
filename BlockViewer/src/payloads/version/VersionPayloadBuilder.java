@@ -1,6 +1,6 @@
 package payloads.version;
 
-import payloads.fragments.NodePayloadFragment;
+import payloads.fragments.NodeFragment;
 import payloads.IPayloadBuilder;
 import util.ByteBufferFeed;
 
@@ -8,8 +8,8 @@ public class VersionPayloadBuilder implements IPayloadBuilder {
     private int version;
     private long services;
     private long timestamp;
-    private NodePayloadFragment receiver;
-    private NodePayloadFragment sender;
+    private NodeFragment receiver;
+    private NodeFragment sender;
     private long nonce;
     private String userAgent;
     private int startHeight;
@@ -30,12 +30,12 @@ public class VersionPayloadBuilder implements IPayloadBuilder {
         return this;
     }
 
-    public VersionPayloadBuilder setReceiver(NodePayloadFragment receiver) {
+    public VersionPayloadBuilder setReceiver(NodeFragment receiver) {
         this.receiver = receiver;
         return this;
     }
 
-    public VersionPayloadBuilder setSender(NodePayloadFragment sender) {
+    public VersionPayloadBuilder setSender(NodeFragment sender) {
         this.sender = sender;
         return this;
     }
@@ -66,8 +66,8 @@ public class VersionPayloadBuilder implements IPayloadBuilder {
         services = feed.pullLong();
         timestamp = feed.pullLong();
 
-        receiver = NodePayloadFragment.from(feed);
-        sender = NodePayloadFragment.from(feed);
+        receiver = NodeFragment.from(feed);
+        sender = NodeFragment.from(feed);
         nonce = feed.pullLong();
 
         int userAgentSize = feed.pullInt8();

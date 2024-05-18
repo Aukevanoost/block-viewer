@@ -10,19 +10,19 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-public record NodePayloadFragment(long services, byte[] ipv6Bytes, short port) implements IPayload {
-    public static NodePayloadFragment from(ByteBufferFeed feed) {
+public record NodeFragment(long services, byte[] ipv6Bytes, short port) implements IPayload {
+    public static NodeFragment from(ByteBufferFeed feed) {
         long services = feed.pullLong();
         byte[] ip = feed.pullBytes(16);
         short port = feed.pullShort();
 
-        return new NodePayloadFragment(services, ip, port);
+        return new NodeFragment(services, ip, port);
     }
-    public static NodePayloadFragment from(long services, String ipAddress, short port) throws UnknownHostException {
+    public static NodeFragment from(long services, String ipAddress, short port) throws UnknownHostException {
         byte[] address = InetAddress.getByName(ipAddress).getAddress();
         if (address.length == 4)  address = toIpv6(address);
 
-        return new NodePayloadFragment(services, address,  port);
+        return new NodeFragment(services, address,  port);
     }
 
     public String ipv6() throws UnknownHostException {
@@ -37,12 +37,15 @@ public record NodePayloadFragment(long services, byte[] ipv6Bytes, short port) i
     }
 
     public ByteBuffer toBuffer() {
-        return ByteBuffer.allocate(Long.BYTES + 16 + Short.BYTES)
+        return ByteBuffer.allocate(bufferSize())
             .order(ByteOrder.LITTLE_ENDIAN)
             .putLong(services)
             .put(ipv6Bytes)
             .putShort(port)
             .flip();
+    }
+    public int bufferSize() {
+        return Long.BYTES + ipv6Bytes.length + Short.BYTES;
     }
 
     public String toString() {

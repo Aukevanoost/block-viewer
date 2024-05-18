@@ -3,5 +3,6 @@ package payloads;
 import java.nio.ByteBuffer;
 
 public interface IPayload {
-    public ByteBuffer toBuffer();
+    ByteBuffer toBuffer();
+    int bufferSize();
 }

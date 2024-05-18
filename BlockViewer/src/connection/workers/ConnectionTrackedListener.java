@@ -1,4 +1,4 @@
-package connection;
+package connection.workers;
 
 import connection.monitoring.StreamMonitorFinder;
 import message.BTCMessage;
@@ -30,10 +30,15 @@ public class ConnectionTrackedListener implements ConnectionWorker,Callable<BTCM
     private Optional<BTCMessage> checkForBTCMessage() {
         try {
             while(feed.bytesLeft() > 0) {
-                var incomingMessage = BTCMessage.from(feed);
-                if(incomingMessage.command().equals(cmd)) {
-                    return Optional.of(incomingMessage);
+                var msg = BTCMessage.from(feed);
+                if(msg.command().equals(cmd)) {
+                    monitor.log("> FOUND", msg.command(), msg.length());
+                    return Optional.of(msg);
                 }
+                monitor.log("> REC", msg.command(), msg.length());
+            }
+            if(feed.bytesLeft() < 0) {
+                throw new IOException("Stream closed");
             }
         }catch(IOException e) {
             e.printStackTrace();

@@ -1,13 +1,13 @@
 package payloads.version;
 
-import payloads.fragments.NodePayloadFragment;
+import payloads.fragments.NodeFragment;
 import payloads.IPayload;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
-public record VersionPayload(int version, long services, long timestamp, NodePayloadFragment receiver, NodePayloadFragment sender, long nonce, String userAgent, int startHeight, boolean relay) implements IPayload {
+public record VersionPayload(int version, long services, long timestamp, NodeFragment receiver, NodeFragment sender, long nonce, String userAgent, int startHeight, boolean relay) implements IPayload {
     public static VersionPayloadBuilder builder() {
         return new VersionPayloadBuilder();
     }
@@ -16,7 +16,7 @@ public record VersionPayload(int version, long services, long timestamp, NodePay
         byte[] user_agent = userAgent.getBytes(StandardCharsets.UTF_8);
 
         return ByteBuffer
-            .allocate(4 + 8 + 8 + 26 + 26 + 8 + 1 + user_agent.length + 4 + 1)
+            .allocate(bufferSize())
             .order(ByteOrder.LITTLE_ENDIAN)
             .putInt(version)
             .putLong(services)
@@ -30,7 +30,9 @@ public record VersionPayload(int version, long services, long timestamp, NodePay
             .put((byte) (relay ? 1 : 0))
             .flip();
     }
-
+    public int bufferSize() {
+        return 4 + 8 + 8 + 26 + 26 + 8 + 1 + userAgent.getBytes(StandardCharsets.UTF_8).length + 4 + 1;
+    }
     @Override
     public String toString() {
         return

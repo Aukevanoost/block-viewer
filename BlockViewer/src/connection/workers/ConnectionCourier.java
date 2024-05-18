@@ -1,4 +1,4 @@
-package connection;
+package connection.workers;
 
 import connection.monitoring.StreamMonitorExecutor;
 import message.BTCMessage;
@@ -30,7 +30,7 @@ public class ConnectionCourier implements ConnectionWorker, Runnable {
                 ArrayList<BTCMessage> mainBag = new ArrayList<>();
                 mailbox.drainTo(mainBag);
                 for (BTCMessage msg : mainBag) {
-                    System.out.format("< SEN: %s (%d bytes)\n", msg.command(), msg.length());
+                    monitor.log("> REC", msg.command(), msg.length());
                     outputStream.write(msg.feed().toArray());
                 }
                 outputStream.flush();

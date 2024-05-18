@@ -1,9 +1,9 @@
 package connection;
 
+import connection.workers.ConnectionTrackedListener;
 import message.BTCMessage;
 
 import java.io.InputStream;
-import java.util.Optional;
 import java.util.concurrent.*;
 
 public record MessageTracker(InputStream feed, ExecutorService executor) {
@@ -17,9 +17,7 @@ public record MessageTracker(InputStream feed, ExecutorService executor) {
 
     public BTCMessage await(Future<BTCMessage> trackedMsg, int timeout, TimeUnit timeUnit) throws InterruptedException {
         try {
-            var msg = trackedMsg.get(timeout, timeUnit);
-            System.out.format("> REC: %s (%d bytes)\n", msg.command(), msg.length());
-            return msg;
+            return trackedMsg.get(timeout, timeUnit);
         } catch (TimeoutException e) {
             trackedMsg.cancel(true);
             throw new InterruptedException("Timeout expired, task is cancelled");

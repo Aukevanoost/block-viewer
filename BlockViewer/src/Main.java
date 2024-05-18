@@ -1,16 +1,18 @@
-import connection.ConnectionCourier;
+import connection.workers.ConnectionCourier;
 import connection.MessageTracker;
 import message.BTCMessage;
-import payloads.fragments.NodePayloadFragment;
+import payloads.block.BlockPayload;
+import payloads.fragments.NodeFragment;
+import payloads.getdata.GetDataPayload;
+import payloads.inv.InvPayload;
+import payloads.fragments.InventoryVectorFragment;
 import payloads.version.VersionPayload;
 import util.ByteBufferFeed;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Arrays;
+import java.text.SimpleDateFormat;
 import java.util.concurrent.*;
 
 public class Main {
@@ -24,6 +26,7 @@ public class Main {
         ExecutorService postService = Executors.newFixedThreadPool(2);
 
         try (Socket socket = new Socket(ip, port)) {
+            System.out.format("Connection established: %s\n",new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date()));
             var tracker = new MessageTracker(socket.getInputStream(), postService);
             var courier = new ConnectionCourier(new DataOutputStream(socket.getOutputStream()));
             postService.submit(courier);
@@ -45,8 +48,8 @@ public class Main {
                                 .setVersion(70015)
                                 .setServices(services)
                                 .setTimestamp(System.currentTimeMillis() / 1000)
-                                .setReceiver(NodePayloadFragment.from(services, ip, port))
-                                .setSender(NodePayloadFragment.from(services, "89.100.241.33", port))
+                                .setReceiver(NodeFragment.from(services, ip, port))
+                                .setSender(NodeFragment.from(services, "89.100.241.33", port))
                                 .setNonce(69)
                                 .setUserAgent("/Satoshi:0.15.2/")
                                 .setStartHeight(0)
@@ -64,8 +67,8 @@ public class Main {
                                 .setVersion(60002)
                                 .setServices(services)
                                 .setTimestamp(System.currentTimeMillis() / 1000)
-                                .setReceiver(NodePayloadFragment.from(services, ip, port))
-                                .setSender(NodePayloadFragment.from(services, "89.100.241.33", port))
+                                .setReceiver(NodeFragment.from(services, ip, port))
+                                .setSender(NodeFragment.from(services, "89.100.241.33", port))
                                 .setNonce(69)
                                 .setUserAgent("/Satoshi:0.7.2/")
                                 .setStartHeight(0)
@@ -78,6 +81,7 @@ public class Main {
                  * VERACK CONNECTION
                  */
                 BTCMessage versionMsg = tracker.await(trackedVersionMsg, 10, TimeUnit.SECONDS);
+                BTCMessage headerMsg = tracker.await(trackedVersionMsg, 10, TimeUnit.SECONDS);
 //                var payloadFeed = ByteBufferFeed.from(ByteBuffer.wrap(versionMsg.payload()).order(ByteOrder.LITTLE_ENDIAN));
 //                VersionPayload versionPL = VersionPayload.builder().from(payloadFeed);
 //                System.out.println(versionPL.toString());
@@ -90,25 +94,58 @@ public class Main {
                  * PONG CHECK
                  */
                 BTCMessage pingMsg = tracker.await(trackedPingMsg, 1, TimeUnit.MINUTES);
-
-                var trackedInvMessage = tracker.track("inv");
                 courier.mailbox.put(BTCMessage.from("pong", pingMsg.payload()));
 
                 /*
                  * INVENTORY CHECK
                  */
-                BTCMessage invMessage = tracker.await(trackedInvMessage,10, TimeUnit.MINUTES);
-//                VersionPayload invMessagePL = VersionPayload.builder().from(
-//                    ByteBufferFeed.from(versionMsg.payload())
-//                );
-//                System.out.println(invMessagePL.toString());
+                var foundBlock = false;
+
+                InventoryVectorFragment blockInvVector = null;
+                while (!foundBlock) {
+                    var trackedInvMessage = tracker.track("inv");
+
+                    BTCMessage invMessage = tracker.await(trackedInvMessage,30, TimeUnit.MINUTES);
+
+                    InvPayload invMessagePL = InvPayload.builder().from(
+                        ByteBufferFeed.from(invMessage.payload()) // Check if block msg
+                    );
+                    for (InventoryVectorFragment v : invMessagePL.inventory()) {
+                        if(v.invType() == InventoryVectorFragment.InventoryType.MSG_BLOCK) {
+                            foundBlock = true;
+                            System.out.println("FOUND A BLOCK!!!");
+                            blockInvVector = v;
+                            break;
+                        }
+                    }
+                }
+
+                /*
+                 * FETCH BLOCK DATA
+                 */
+                var trackedBlockMsg = tracker.track("block");
+
+                courier.mailbox.put(
+                    BTCMessage.from(
+                        "getdata",
+                        GetDataPayload.from(blockInvVector)
+                            .toBuffer()
+                            .array()
+                    )
+                );
+                BTCMessage blockMsg = tracker.await(trackedBlockMsg, 1, TimeUnit.MINUTES);
+                var dataPayload = BlockPayload.from(
+                    ByteBufferFeed.from(blockMsg.payload()) // Check if block msg
+                );
+
+                System.out.format("Received block! (%d bytes)\n", dataPayload.bufferSize());
 
                 System.out.println("=== leaving now bye ===");
 
             }
-//            catch (InterruptedException e) {
-//                System.out.println("Interrupted: " + e.getMessage());
-//            }
+            catch (InterruptedException e) {
+                System.out.println("Interrupted: " + e.getMessage());
+            }
             catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Exiting postService.");
@@ -119,9 +156,5 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-//        var req = new BitcoinVersionRequest();
-//        req.connect("185.197.160.61");
     }
 }

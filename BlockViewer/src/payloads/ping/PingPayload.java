@@ -17,6 +17,8 @@ public record PingPayload(long nonce) implements IPayload {
             .putLong(nonce)
             .flip();
     }
-
+    public int bufferSize() {
+        return 8;
+    }
 
 }
