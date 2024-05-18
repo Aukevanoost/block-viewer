@@ -30,7 +30,7 @@ public class ConnectionCommandRetriever implements ConnectionWorker,Callable<BTC
 
         return Optional.ofNullable(feed.poll()).flatMap(msg -> {
             if(msg.command().equals(cmd)) {
-                monitor.log("> FOUND", msg.command(), msg.length());
+                monitor.log("> PROCESS", msg.command(), msg.length());
                 return Optional.of(msg);
             }
             return Optional.empty();

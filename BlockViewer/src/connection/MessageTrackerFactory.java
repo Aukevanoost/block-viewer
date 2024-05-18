@@ -19,14 +19,14 @@ public class MessageTrackerFactory {
     }
     public MessageTracker build() throws IOException {
 
-        ExecutorService postService = Executors.newFixedThreadPool(3); // courier, listener and retriever
+        ExecutorService executor = Executors.newFixedThreadPool(3); // courier, listener and retriever
 
         var courier = new ConnectionCourier(new DataOutputStream(socket.getOutputStream()));
-        postService.submit(courier);
+        executor.submit(courier);
 
         var listener = new ConnectionListener(socket.getInputStream(), courier.mailbox);
-        postService.submit(listener);
+        executor.submit(listener);
 
-        return new MessageTracker(listener, courier, postService);
+        return new MessageTracker(listener, courier, executor);
     }
 }

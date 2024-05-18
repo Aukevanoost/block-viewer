@@ -11,12 +11,12 @@ import java.util.concurrent.*;
 public record MessageTracker(
         ConnectionListener listener,
         ConnectionCourier courier,
-        ExecutorService postService
+        ExecutorService executor
 ) {
 
 
     public Future<BTCMessage> track(String cmd) {
-        return postService.submit(
+        return executor.submit(
             new ConnectionCommandRetriever(listener.buffer, cmd)
         );
     }
@@ -44,6 +44,6 @@ public record MessageTracker(
         this.courier.fire();
         this.listener.fire();
 
-        this.postService.shutdown();
+        this.executor.shutdown();
     }
 }

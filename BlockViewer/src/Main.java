@@ -1,6 +1,4 @@
 import connection.MessageTrackerFactory;
-import connection.workers.ConnectionCourier;
-import connection.workers.ConnectionListener;
 import message.BTCMessage;
 import message.payloads.block.BlockPayload;
 import message.payloads.fragments.NodeFragment;
@@ -12,8 +10,6 @@ import printer.BlockPrinter;
 import util.ByteBufferFeed;
 import util.ByteHasher;
 import util.Convert;
-
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
@@ -23,6 +19,7 @@ import java.util.concurrent.*;
 
 public class Main {
     public static void main(String... args) {
+
         // Trying not to annoy a single server
         String ip = getRandomIPAddress();
 
@@ -36,7 +33,7 @@ public class Main {
                 new SimpleDateFormat("yyyy.MM.dd 'at' HH:mm:ss").format(new java.util.Date())
             );
 
-            var tracker = MessageTrackerFactory
+            var postService = MessageTrackerFactory
                 .from(socket)
                 .build();
 
@@ -44,7 +41,7 @@ public class Main {
                 /*
                  * === VERSION CONNECTION
                  */
-                tracker.deliver(
+                postService.deliver(
                     BTCMessage.from(
                         "version",
                         VersionPayload.builder()
@@ -61,12 +58,11 @@ public class Main {
                     )
                 );
 
-
                 /*
                  * === VERRACK
                  */
-                tracker.await("version",10, TimeUnit.SECONDS);
-                tracker.deliver( BTCMessage.empty("verack") );
+                postService.await("version",10, TimeUnit.SECONDS);
+                postService.deliver( BTCMessage.empty("verack") );
 
                 /*
                  * === WAIT FOR INV MESSAGE WITH BLOCK
@@ -75,7 +71,7 @@ public class Main {
 
                 InventoryVectorFragment blockInvVector = null;
                 while (!foundBlock) {
-                    BTCMessage invMessage = tracker.await("inv",30, TimeUnit.MINUTES);
+                    BTCMessage invMessage = postService.await("inv",30, TimeUnit.MINUTES);
 
                     InvPayload invMessagePL = InvPayload.builder().from(
                         ByteBufferFeed.from(invMessage.payload()) // Check if block msg
@@ -93,7 +89,7 @@ public class Main {
                 /*
                  * === FETCH BLOCK BASED ON INV VECTOR
                  */
-                tracker.deliver(
+                postService.deliver(
                     BTCMessage.from(
                         "getdata",
                         GetDataPayload.from(blockInvVector)
@@ -102,7 +98,7 @@ public class Main {
                     )
                 );
 
-                BTCMessage blockMsg = tracker.await("block",1, TimeUnit.MINUTES);
+                BTCMessage blockMsg = postService.await("block",1, TimeUnit.MINUTES);
 
                 var blockPayload = BlockPayload.from(
                     ByteBufferFeed.from(blockMsg.payload()) // Check if block msg
@@ -130,7 +126,7 @@ public class Main {
 
             System.out.println("Exiting postService.");
 
-            tracker.shutdown();
+            postService.shutdown();
         } catch (IOException e) {
             e.printStackTrace();
         }
