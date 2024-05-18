@@ -13,6 +13,8 @@ import java.util.stream.Stream;
 public class ByteStream {
     private InputStream _stream;
 
+
+
     private ByteStream(InputStream stream) {
         this._stream = stream;
     }
@@ -31,7 +33,7 @@ public class ByteStream {
         return buffer.flip();
     }
 
-    public byte[] array(int n) throws IOException {
+    public byte[] toArray(int n) throws IOException {
         return buffer(n).array();
     }
 
@@ -55,11 +57,13 @@ public class ByteStream {
         return tap(n).toList();
     }
 
-    public String hex(int n) {
+    public String toHex(int n) {
         return tap(n)
-                .map(b -> String.format("%02x", b))
-                .collect(Collectors.joining());
+                .map(b -> String.format("%02X", b))
+                .collect(Collectors.joining(":"));
     }
 
-
+    public int bytesLeft() throws IOException{
+        return _stream.available();
+    }
 }

@@ -1,10 +1,12 @@
-package responses;
+package payloads;
+
+import message.BTCNode;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
-public record VersionPayload(int version, long services, long timestamp, VersionNode receiver, VersionNode sender, long nonce, String userAgent, int startHeight, Boolean relay) {
+public record VersionPayload(int version, long services, long timestamp, BTCNode receiver, BTCNode sender, long nonce, String userAgent, int startHeight, boolean relay) {
     public static VersionPayloadBuilder builder() {
         return new VersionPayloadBuilder();
     }
@@ -32,8 +34,8 @@ public record VersionPayload(int version, long services, long timestamp, Version
         private int version;
         private long services;
         private long timestamp;
-        private VersionNode receiver;
-        private VersionNode sender;
+        private BTCNode receiver;
+        private BTCNode sender;
         private long nonce;
         private String userAgent;
         private int startHeight;
@@ -54,12 +56,12 @@ public record VersionPayload(int version, long services, long timestamp, Version
             return this;
         }
 
-        public VersionPayloadBuilder setReceiver(VersionNode receiver) {
+        public VersionPayloadBuilder setReceiver(BTCNode receiver) {
             this.receiver = receiver;
             return this;
         }
 
-        public VersionPayloadBuilder setSender(VersionNode sender) {
+        public VersionPayloadBuilder setSender(BTCNode sender) {
             this.sender = sender;
             return this;
         }
@@ -89,8 +91,8 @@ public record VersionPayload(int version, long services, long timestamp, Version
             services = buffer.getLong();
             timestamp = buffer.getLong();
 
-            receiver = VersionNode.from(buffer);
-            sender = VersionNode.from(buffer);
+            receiver = BTCNode.from(buffer);
+            sender = BTCNode.from(buffer);
 
             nonce = buffer.getLong();
 
