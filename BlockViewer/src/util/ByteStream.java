@@ -33,9 +33,6 @@ public class ByteStream {
         return buffer.flip();
     }
 
-    public byte[] toArray(int n) throws IOException {
-        return buffer(n).array();
-    }
 
     public Stream<Byte> tap() {
         return Stream.generate(() -> {

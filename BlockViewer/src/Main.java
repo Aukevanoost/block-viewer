@@ -1,8 +1,9 @@
 import connection.ConnectionCourier;
 import connection.MessageTracker;
 import message.BTCMessage;
-import message.BTCNode;
-import payloads.VersionPayload;
+import payloads.fragments.node.NodePayloadFragment;
+import payloads.inv.InvPayload;
+import payloads.version.VersionPayload;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -36,8 +37,8 @@ public class Main {
                                 .setVersion(60002)
                                 .setServices(services)
                                 .setTimestamp(System.currentTimeMillis() / 1000)
-                                .setReceiver(BTCNode.from(services, ip, port))
-                                .setSender(BTCNode.from(services, "89.100.241.33", port))
+                                .setReceiver(NodePayloadFragment.from(services, ip, port))
+                                .setSender(NodePayloadFragment.from(services, "89.100.241.33", port))
                                 .setNonce(69)
                                 .setUserAgent("/Satoshi:0.7.2/")
                                 .setStartHeight(0)
@@ -49,7 +50,7 @@ public class Main {
                 /*
                  * VERACK CONNECTION
                  */
-                BTCMessage msg = tracker.await(trackedVersionMsg, 10, TimeUnit.SECONDS);
+                BTCMessage versionMsg = tracker.await(trackedVersionMsg, 10, TimeUnit.SECONDS);
                 var trackedPingMsg = tracker.track("ping");
 
                 courier.mailbox.put( BTCMessage.empty("verack") );
@@ -60,24 +61,24 @@ public class Main {
                 BTCMessage pingMsg = tracker.await(trackedPingMsg, 1, TimeUnit.MINUTES);
 
                 var trackedInvMessage = tracker.track("inv");
-                var pongMsg = BTCMessage.from("pong", pingMsg.payload());
-
-                courier.mailbox.put(
-                        pongMsg
-                );
+                courier.mailbox.put(BTCMessage.from("pong", pingMsg.payload()));
 
                 /*
-                 * PONG CHECK
+                 * INVENTORY CHECK
                  */
-                BTCMessage invMessage = tracker.await(trackedInvMessage,20, TimeUnit.SECONDS);
-                System.out.println("Size: " + invMessage.length());
-
+                BTCMessage invMessage = tracker.await(trackedInvMessage,10, TimeUnit.MINUTES);
+                var invPayload = InvPayload.builder().from(invMessage.feed());
+                invPayload.inventory().forEach(v -> System.out.println("Payload: " + v.invType()));
 
                 System.out.println("leaving now bye");
 
             } catch (InterruptedException e) {
                 System.out.println("Interrupted: " + e.getMessage());
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Exiting postService.");
             }
+
             courier.fire();
             postService.shutdown();
         } catch (IOException e) {

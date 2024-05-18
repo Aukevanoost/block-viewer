@@ -1,15 +1,16 @@
 package payloads.inv;
 
+import payloads.IPayload;
+import payloads.ping.PingPayload;
+import payloads.version.VersionPayloadBuilder;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.List;
 
-public class InvPayload {
-    private final List<InventoryVector> inventory;
-
-    public InvPayload(List<InventoryVector> inventory) {
-        this.inventory = inventory;
+public record InvPayload(List<InventoryVector> inventory) implements IPayload {
+    public static InvPayloadBuilder builder() {
+        return new InvPayloadBuilder();
     }
 
     public ByteBuffer toBuffer() {
@@ -25,6 +26,4 @@ public class InvPayload {
 
         return buffer.flip();
     }
-
-
 }

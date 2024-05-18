@@ -1,4 +1,7 @@
-package message;
+package payloads.fragments.node;
+
+import payloads.IPayload;
+import util.ByteBufferFeed;
 
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -7,20 +10,19 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-public record BTCNode(long services, byte[] ipv6Bytes, short port){
-    public static BTCNode from(ByteBuffer buffer) {
-        long services = buffer.getLong();
-        byte[] ip = new byte[16]; buffer.get(ip);
-        short port = buffer.getShort();
+public record NodePayloadFragment(long services, byte[] ipv6Bytes, short port) implements IPayload {
+    public static NodePayloadFragment from(ByteBufferFeed feed) {
+        long services = feed.pullLong();
+        byte[] ip = feed.pullBytes(16);
+        short port = feed.pullShort();
 
-        return new BTCNode(services, ip, port);
+        return new NodePayloadFragment(services, ip, port);
     }
-
-    public static BTCNode from(long services, String ipAddress, short port) throws UnknownHostException {
+    public static NodePayloadFragment from(long services, String ipAddress, short port) throws UnknownHostException {
         byte[] address = InetAddress.getByName(ipAddress).getAddress();
         if (address.length == 4)  address = toIpv6(address);
 
-        return new BTCNode(services, address,  port);
+        return new NodePayloadFragment(services, address,  port);
     }
 
     public String ipv6() throws UnknownHostException {

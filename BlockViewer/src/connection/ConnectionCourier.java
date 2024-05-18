@@ -8,11 +8,11 @@ import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class ConnectionCourier implements Runnable {
-    private final DataOutputStream stream;
+    private final DataOutputStream outputStream;
     public final LinkedBlockingQueue<BTCMessage> mailbox = new LinkedBlockingQueue<>();
     private volatile boolean fired = false;
-    public ConnectionCourier(DataOutputStream stream) {
-        this.stream = stream;
+    public ConnectionCourier(DataOutputStream outputStream) {
+        this.outputStream = outputStream;
     }
 
     public void fire() {
@@ -26,10 +26,10 @@ public class ConnectionCourier implements Runnable {
                     ArrayList<BTCMessage> mailbuffer = new ArrayList<>();
                     mailbox.drainTo(mailbuffer);
                     for(BTCMessage msg : mailbuffer) {
-                        System.out.println("< Delivering: " + msg.command());
-                        stream.write(msg.toArray());
+                        System.out.format("< SEN: %s (%d bytes)\n", msg.command(), msg.length());
+                        outputStream.write(msg.feed().toArray());
                     }
-                    stream.flush();
+                    outputStream.flush();
                 }
             }
         }catch(IOException e) {

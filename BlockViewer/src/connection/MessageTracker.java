@@ -17,7 +17,7 @@ public record MessageTracker(InputStream feed, ExecutorService executor) {
     public BTCMessage await(Future<BTCMessage> trackedMsg, int timeout, TimeUnit timeUnit) throws InterruptedException {
         try {
             var msg = trackedMsg.get(timeout, timeUnit);
-            System.out.println("> Arrived!: " + msg.command());
+            System.out.format("> REC: %s (%d bytes)\n", msg.command(), msg.length());
             return msg;
         } catch (TimeoutException e) {
             trackedMsg.cancel(true);

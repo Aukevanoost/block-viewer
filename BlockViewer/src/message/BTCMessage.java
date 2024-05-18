@@ -1,5 +1,6 @@
 package message;
 
+import util.ByteBufferFeed;
 import util.ByteStream;
 
 import java.io.IOException;
@@ -12,12 +13,20 @@ import java.util.Arrays;
 
 public record BTCMessage(byte[] magic, String command, int length, byte[] checksum, byte[] payload) {
     public static BTCMessage from(ByteStream stream) throws IOException {
-        byte[] magic = stream.toArray(4);
-        String cmd = new String(stream.buffer(12).array(), StandardCharsets.US_ASCII).trim();
-        int length = stream.buffer(4).getInt();
-        byte[] checksum = stream.toArray(4);
-        byte[] payload = stream.toArray(length);
-        return new BTCMessage(magic, cmd, length, checksum, payload);
+        var headerFeed = ByteBufferFeed.from(stream.buffer(4 + 12 + 4 + 4));
+
+        byte[] magic = headerFeed.pullBytes(4);// stream.buffer(4).array();
+        String cmd = headerFeed.pullString(12);
+        int length = headerFeed.pullInt32();
+        byte[] checksum = headerFeed.pullBytes(4);
+
+        return new BTCMessage(
+            magic,
+            cmd,
+            length,
+            checksum,
+            stream.buffer(length).array()
+        );
     }
 
     public static BTCMessage from(String command, byte[] payload) {
@@ -34,20 +43,18 @@ public record BTCMessage(byte[] magic, String command, int length, byte[] checks
         return BTCMessage.from(command, new byte[0]);
     }
 
-    public ByteBuffer toBuffer() {
-        return ByteBuffer
-            .allocate(4 + 12 + 4 + 4 + payload.length)
-            .order(ByteOrder.LITTLE_ENDIAN)
-            .put(magic)  // Magic value
-            .put(Arrays.copyOf(command.getBytes(StandardCharsets.US_ASCII), 12))
-            .putInt(payload.length)
-            .put(checksum)
-            .put(payload)
-            .flip();
-    }
-
-    public byte[] toArray() {
-        return toBuffer().array();
+    public ByteBufferFeed feed() {
+        return ByteBufferFeed.from(
+            ByteBuffer
+                .allocate(4 + 12 + 4 + 4 + payload.length)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .put(magic)  // Magic value
+                .put(Arrays.copyOf(command.getBytes(StandardCharsets.US_ASCII), 12))
+                .putInt(payload.length)
+                .put(checksum)
+                .put(payload)
+                .flip()
+        );
     }
 
     public static byte[] checksum(byte[] payload) {
@@ -58,13 +65,5 @@ public record BTCMessage(byte[] magic, String command, int length, byte[] checks
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private static String toHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
     }
 }
